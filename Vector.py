@@ -1,39 +1,34 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import math
 import numpy as np
 
 EPS = 1e-12
 
-@dataclass(init=False, repr=False, eq=True, order=True, unsafe_hash=False,
-           frozen=False, match_args=True, kw_only=False, slots=False, weakref_slot=False)
 class Vector:
     values: list[float]
 
-    def __init__(self, values: list[float]):
+    def __init__(self, values: list[float]) -> None:
         if not all(isinstance(v, (int, float)) for v in values):
             raise TypeError("All elements must be int or float")
-        for v in values:
-            float(v)
-        self.values = values
+        self.values = [float(v) for v in values]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Vector({self.values})"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.values)
 
     def __iter__(self):
         return iter(self.values)
 
-    def __getitem__(self, key: int | slice):
+    def __getitem__(self, key: int | slice) -> float | Vector:
         if isinstance(key, slice):
             return Vector(self.values[key])
         elif isinstance(key, int):
             return self.values[key]
         return NotImplemented
 
-    def __setitem__(self, key: int | slice, val: float | list):
+    def __setitem__(self, key: int | slice, val: float | list) -> None:
         if isinstance(key, int):
             self.values[key] = float(val)
         elif isinstance(key, slice):
@@ -52,6 +47,12 @@ class Vector:
     @property
     def shape(self) -> tuple[int]:
         return (len(self.values), )
+
+    def __eq__(self, other: Vector) -> bool:
+        if not isinstance(other, (Vector)) or len(self) != len(other):
+            return False
+        return all(math.isclose(a, b, abs_tol=EPS) for a,b in zip(self, other))
+
 
     def __add__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
