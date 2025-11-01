@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List
+import math
+import numpy as np
 
 EPS = 1e-12
 
@@ -77,6 +78,11 @@ class Vector:
             return self
         return NotImplemented
 
+    def __sub__(self, other: Vector):
+        if isinstance(other, Vector):
+            return Vector([a -b for a,b in zip(self, other)])
+        return NotImplemented
+
     def __mul__(self, other: float | int | Vector):
         if isinstance(other, Vector):
             if len(self) != len(other):
@@ -139,6 +145,45 @@ class Vector:
         if p <= 0:
             raise ValueError("norm: p must be > 0 (or 0/inf handled specially)")
         return sum(abs(val) ** p for val in self) ** (1/p)
+
+    def normalized(self):
+        n = self.norm(2)
+        if n < EPS:
+            raise ValueError("Cannot normalize a zero or near-zero vector.")
+        return type(self)([val / n for val in self])
+
+    def distance(self, other: Vector, p: float = 2):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return (self - other).norm(p)
+
+    def angle(self, other: Vector, degrees: bool = False):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        n1, n2 = self.norm(), other.norm()
+        if n1 < EPS or n2 < EPS:
+            raise ValueError("Angle is undefined for zero or near zero vectors")
+        cos = (self @ other) / (n1 * n2)
+        cos = max(-1.0, min(1.0, cos))
+        if degrees:
+            return math.acos(cos) * (180/math.pi)
+        else:
+            return math.acos(cos)
+
+    def project_onto(self, other: Vector):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        denom = other @ other
+        if denom < EPS
+            raise ValueError("Cannot project onto zero vector.")
+        scale = (self @ other) / denom
+        return type(self)([scale * val for val in other])
+
+    def to_numpy(self):
+        return np.
+
+
+
 
 vec = Vector([0.4, 0.5, 0.2, 0.3])
 vec2 = Vector([5.4, 4.5, 3.3, 2.3])
