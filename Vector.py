@@ -43,17 +43,17 @@ class Vector:
 
 
     @classmethod
-    def from_list(cls, lst):
+    def from_list(cls, lst) -> Vector:
         return Vector(lst)
 
-    def tolist(self):
+    def tolist(self) -> list[float]:
         return self.values
 
     @property
-    def shape(self):
+    def shape(self) -> tuple[int]:
         return (len(self.values), )
 
-    def __add__(self, other: float | int | Vector):
+    def __add__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '+' operation. Vectors must be of equal length to add.")
@@ -62,12 +62,12 @@ class Vector:
             return Vector([val + other for val in self])
         return NotImplemented
 
-    def __radd__(self, other: int | float):
+    def __radd__(self, other: int | float) -> Vector:
         if isinstance(other, (float, int)):
             return self.__add__(other)
         return NotImplemented
 
-    def __iadd__(self, other: float | int | Vector):
+    def __iadd__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '+=' operation. In place addition can only be conducted with Vectors of equal length.")
@@ -78,12 +78,25 @@ class Vector:
             return self
         return NotImplemented
 
-    def __sub__(self, other: Vector):
+    def __sub__(self, other: Vector) -> Vector:
         if isinstance(other, Vector):
             return Vector([a -b for a,b in zip(self, other)])
         return NotImplemented
 
-    def __mul__(self, other: float | int | Vector):
+    def __isub__(self, other: float | int | Vector) -> Vector:
+        if not isinstance(other, (float, int, Vector)):
+            return NotImplemented
+        elif isinstance(other, Vector):
+            if len(self) != len(other):
+                raise ValueError("Invalid -= operation. In place subtraction can only be conducted with Vectors of equal length.")
+            self[:] = [a - b for a,b in zip(self, other)]
+            return self
+        else:
+            self[:] = [val - other for val in self]
+            return self
+
+
+    def __mul__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '*' operation. Vectors must be of equal length for element-wise multiplication.")
@@ -92,12 +105,12 @@ class Vector:
             return Vector([val * other for val in self])
         return NotImplemented
 
-    def __rmul__(self, other: float | int):
+    def __rmul__(self, other: float | int) -> Vector:
         if isinstance(other, (float, int)):
             return self.__mul__(other)
         return NotImplemented
 
-    def __imul__(self, other: float | int | Vector):
+    def __imul__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '*' operation. Vectors must be of equal length for element-wise multiplication.")
@@ -108,21 +121,21 @@ class Vector:
             return self
         return NotImplemented
 
-    def __matmul__(self, other: Vector):
+    def __matmul__(self, other: Vector) -> float:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vectors must be of equal length for dot product.")
             return sum(self[i] * other[i] for i in range(len(self)))
         return NotImplemented
 
-    def __truediv__(self, other: float | int):
+    def __truediv__(self, other: float | int) -> Vector:
         if isinstance(other, (float, int)):
             if other == 0:
                 raise ZeroDivisionError("Division by zero.")
             return Vector([val / other for val in self])
         return NotImplemented
 
-    def __itruediv__(self, other: float | int):
+    def __itruediv__(self, other: float | int) -> Vector:
         if isinstance(other, (float, int)):
             if other == 0:
                 raise ZeroDivisionError("Division by zero.")
@@ -130,10 +143,10 @@ class Vector:
             return self
         return NotImplemented
 
-    def dot(self, other: Vector):
+    def dot(self, other: Vector) -> float:
         return self @ other
 
-    def norm(self, p: float = 2):
+    def norm(self, p: float = 2) -> float:
         """For most cases this is used to return the absolute value or the magnitude of the vector.
         There are additional uses in ML"""
         if not isinstance(p, (float, int)):
@@ -146,18 +159,22 @@ class Vector:
             raise ValueError("norm: p must be > 0 (or 0/inf handled specially)")
         return sum(abs(val) ** p for val in self) ** (1/p)
 
-    def normalized(self):
+    def normalized(self) -> Vector:
+        """Returns the unit vector in the direction of the input vector"""
         n = self.norm(2)
         if n < EPS:
             raise ValueError("Cannot normalize a zero or near-zero vector.")
         return type(self)([val / n for val in self])
 
-    def distance(self, other: Vector, p: float = 2):
+    def distance(self, other: Vector, p: float = 2) -> float:
+        """Returns the distance between the tips of 2 vectors, Manhattan Distance, Euclidean Distance
+        or Chebyshev distance"""
         if not isinstance(other, Vector):
             return NotImplemented
         return (self - other).norm(p)
 
-    def angle(self, other: Vector, degrees: bool = False):
+    def angle(self, other: Vector, degrees: bool = False) -> float:
+        """Returns the angle between 2 vectors"""
         if not isinstance(other, Vector):
             return NotImplemented
         n1, n2 = self.norm(), other.norm()
@@ -170,20 +187,44 @@ class Vector:
         else:
             return math.acos(cos)
 
-    def project_onto(self, other: Vector):
+    def project_onto(self, other: Vector) -> Vector:
+        """Returns a projection of one vector in the direction of the other"""
         if not isinstance(other, Vector):
             return NotImplemented
         denom = other @ other
-        if denom < EPS
+        if denom < EPS:
             raise ValueError("Cannot project onto zero vector.")
         scale = (self @ other) / denom
         return type(self)([scale * val for val in other])
 
-    def to_numpy(self):
-        return np.
+    def to_numpy(self) -> np.ndarray:
+        return np.array(self.values, dtype=float)
+
+    @classmethod
+    def from_numpy(cls, arr: np.ndarray) -> Vector:
+        return cls(arr.tolist())
+
+    def __array__(self, dtype=None) -> np.ndarray:
+        return np.array(self.values, dtype=dtype)
+
+    def sum(self) -> float:
+        return math.fsum(val for val in self)
+
+    def mean(self) -> float:
+        if len(self) == 0:
+            raise ValueError("mean is undefined for empty vector.")
+        return self.sum() / len(self)
 
 
+    def max(self) -> float:
+        if len(self) == 0:
+            raise ValueError("max is undefined for empty vector.")
+        return max(self)
 
+    def min(self) -> float:
+        if len(self) == 0:
+            raise ValueError("max is undefined for empty vector.")
+        return min(self)
 
 vec = Vector([0.4, 0.5, 0.2, 0.3])
 vec2 = Vector([5.4, 4.5, 3.3, 2.3])
@@ -194,4 +235,7 @@ vec2 = Vector([5.4, 4.5, 3.3, 2.3])
 
 vec3 = vec * vec2
 print(vec3)
-
+print(vec3.sum())
+print(vec3.mean())
+print(vec3.max())
+print(vec3.min())
