@@ -79,10 +79,16 @@ class Vector:
             return self
         return NotImplemented
 
-    def __sub__(self, other: Vector) -> Vector:
-        if isinstance(other, Vector):
-            return Vector([a -b for a,b in zip(self, other)])
-        return NotImplemented
+    def __sub__(self, other: Vector | float | int) -> Vector:
+        if not isinstance(other, (float, int, Vector)):
+            return NotImplemented
+        elif isinstance(other, Vector):
+            if len(self) != len(other):
+                raise ValueError("Vector subtraction can only be conducted on vectors of equal length.")
+            return Vector([a - b for a,b in zip(self, other)])
+        else:
+            return Vector([val - other for val in self])
+
 
     def __isub__(self, other: float | int | Vector) -> Vector:
         if not isinstance(other, (float, int, Vector)):
@@ -129,20 +135,37 @@ class Vector:
             return sum(self[i] * other[i] for i in range(len(self)))
         return NotImplemented
 
-    def __truediv__(self, other: float | int) -> Vector:
-        if isinstance(other, (float, int)):
-            if other == 0:
-                raise ZeroDivisionError("Division by zero.")
-            return Vector([val / other for val in self])
-        return NotImplemented
+    def __truediv__(self, other: float | int | Vector) -> Vector:
+        if not isinstance(other, (float, int, Vector)):
+            return NotImplemented
+        elif isinstance(other, Vector):
+            if len(self) != len(other):
+                raise ValueError("Vector division can only be conducted on vectors of equal length.")
+            if all(abs(val) > EPS for val in other):
+                return Vector([a / b for a,b in zip(self, other)])
+            else:
+                raise ZeroDivisionError("Division by Zero: zero values within vector.")
+        elif abs(other) < EPS:
+            raise ZeroDivisionError("Division by zero.")
+        return Vector([val / other for val in self])
 
-    def __itruediv__(self, other: float | int) -> Vector:
-        if isinstance(other, (float, int)):
-            if other == 0:
-                raise ZeroDivisionError("Division by zero.")
-            self[:] = [val / other for val in self]
-            return self
-        return NotImplemented
+
+    def __itruediv__(self, other: float | int | Vector) -> Vector:
+        if not isinstance(other, (float, int, Vector)):
+            return NotImplemented
+        elif isinstance(other, Vector):
+            if len(self) != len(other):
+                raise ValueError("Vector division can only be conducted on vectors of equal length.")
+            if all(abs(val) > EPS for val in other):
+                self[:] = [a / b for a,b in zip(self, other)]
+                return self
+            else:
+                raise ZeroDivisionError("Division by Zero: zero values within vector.")
+        elif abs(other) < EPS:
+            raise ZeroDivisionError("Division by zero.")
+        self[:] = [val / other for val in self]
+        return self
+
 
     def dot(self, other: Vector) -> float:
         return self @ other
@@ -227,16 +250,7 @@ class Vector:
             raise ValueError("max is undefined for empty vector.")
         return min(self)
 
-vec = Vector([0.4, 0.5, 0.2, 0.3])
-vec2 = Vector([5.4, 4.5, 3.3, 2.3])
-#vec3 = Vector([0.4, 0.5, 0.1, 0.3])
-#vec4 = Vector([0.4, 0.5, 0.2, 0.3])
 
 
 
-vec3 = vec * vec2
-print(vec3)
-print(vec3.sum())
-print(vec3.mean())
-print(vec3.max())
-print(vec3.min())
+
