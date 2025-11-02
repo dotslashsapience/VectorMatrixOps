@@ -51,16 +51,28 @@ class Matrix:
 
     @classmethod
     def from_rows(cls, rows: list[Vector[float]] | list[list[float]]) -> Matrix:
+        # need to add a rectangularity check
         if not rows:
             raise ValueError("Rows cannot be empty.")
         if isinstance(rows[0], list):
             rows = [Vector(r) for r in rows]
         elif not isinstance(rows[0], Vector):
-                raise TypeError("Rows must be list of lists or list of vectors.")
+                raise TypeError("Rows must be list of lists or list of Vectors.")
         return cls(rows)
 
+    @classmethod
+    def from_cols(cls, cols: list[list[float]] | list[Vector[float]]) -> Matrix:
+        #add a rectangularity check
+        if not cols:
+            raise ValueError("Cols can not be empty.")
+        elif not isinstance(cols[0], (list, Vector)):
+            raise TypeError("Columns must be list of lists or list of Vectors.")
+        cols = [Vector([col[i] for col in cols]) for i in range(0, len(cols[0]))]
+        return cls(cols)
 
 
-rows = [Vector([2, 3, 5]), Vector([2 ,5 , 9]), Vector([9, 2, 5]), Vector([9, 2, 3])]
-mtrx = Matrix(rows)
-print(mtrx)
+rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
+mtrx1 = Matrix.from_rows(rows)
+mtrx2 = Matrix.from_cols(rows)
+print(mtrx1)
+print(mtrx2)
