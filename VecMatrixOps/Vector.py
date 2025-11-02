@@ -1,3 +1,4 @@
+#VecMatrixOps/Vector.py
 from __future__ import annotations
 import math
 import numpy as np
@@ -14,6 +15,9 @@ class Vector:
 
     def __repr__(self) -> str:
         return f"Vector({self.values})"
+
+    def raw_repr(self) -> str:
+        return repr(self.values)
 
     def __len__(self) -> int:
         return len(self.values)
