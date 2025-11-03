@@ -81,34 +81,45 @@ class Matrix:
     def zeros(cls, r: int, c: int) -> Matrix:
         if not (isinstance(r, int) and isinstance(c, int)):
             raise TypeError("Rows and columns must be specified as integers.")
-        if r <= 0 or c <= 0:
-            raise ValueError("Matrix must have greater than zero rows and columns.")
+        if r < 1 or c < 1:
+            raise ValueError("Matrix must have 1 or more rows and columns.")
         return cls([Vector([0 for _ in range(0, c)]) for _ in range(0, r)])
 
     @classmethod
     def ones(cls, r: int, c: int) -> Matrix:
         if not (isinstance(r, int) and isinstance(c, int)):
             raise TypeError("Rows and columns must be specified as integers.")
-        if r <= 0 or c <= 0:
-            raise ValueError("Matrix must have greater than zero rows and columns.")
+        if r < 1 or c < 1:
+            raise ValueError("Matrix must have 1 or more rows and columns.")
         return cls([Vector([1 for _ in range(0, c)]) for _ in range(0, r)])
 
     @classmethod
     def eye(cls, n: int) -> Matrix:
         if not isinstance(n, int):
             raise TypeError("Matrix dimensions must be specified as an integer.")
-        if n <= 0:
-            raise ValueError("Matrix dimensions must be greater than zero.")
+        if n < 1:
+            raise ValueError("Matrix must have 1 or more rows and columns.")
         mtrx = Matrix.zeros(n, n)
         for i in range(0,n):
             mtrx[i][i] = 1
         return mtrx
 
-
+    @classmethod
+    def random(cls, r: int, c: int, lo: float=0.0, hi: float=1.0) -> Matrix:
+        if not (isinstance(r, int) and isinstance(c, int)):
+            raise TypeError("Matrix dimensions must be specified as integers.")
+        if r < 1 or c < 1:
+            raise ValueError("Matrix must have 1 or more rows and columns.")
+        if not (isinstance(lo, (float, int)) and isinstance(hi, (float, int))):
+            raise TypeError("Max(hi) and min(lo) must be specified as floats.")
+        if lo >= hi:
+            raise ValueError("Min(lo) must be less than max(hi).")
+        random.seed()
+        return cls([Vector([random.uniform(lo, hi) for _ in range(0, c)]) for _ in range(0, r)])
 
 '''rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_cols(rows)
 print(mtrx1)
 print(mtrx2)'''
-print(Matrix.zeros(3, 4))
+print(Matrix.random(3, 4, -1.0, 1.0))
