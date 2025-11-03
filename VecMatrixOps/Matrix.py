@@ -141,8 +141,15 @@ class Matrix:
     def col_sum(self, j: int) -> float:
         return math.fsum(row[j] for row in self.rows)
 
+    def trace(self) -> float:
+        if len(self) != len(self.rows[0]):
+            raise ValueError("Trace can only be conducted on square matrices.")
+        return math.fsum(self[i][i] for i in range(0, len(self)))
+
+
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
-mtrx = Matrix(rows)
+mtrx = Matrix.eye(3)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
-print(mtrx1.col_sum(0))
+
+print(mtrx1.trace())
