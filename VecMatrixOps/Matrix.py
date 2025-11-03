@@ -135,9 +135,14 @@ class Matrix:
     def sum(self) -> float:
         return math.fsum(val for row in self for val in row)
 
+    def row_sum(self, i: int) -> float:
+        return math.fsum(val for val in self[i])
+
+    def col_sum(self, j: int) -> float:
+        return math.fsum(row[j] for row in self.rows)
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx = Matrix(rows)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
-print(mtrx1.sum())
+print(mtrx1.col_sum(0))
