@@ -1,6 +1,7 @@
 #VecMatrixOps/Matrix.py
 from __future__ import annotations
 from .Vector import Vector
+import random
 import math
 import numpy as np
 
@@ -51,28 +52,63 @@ class Matrix:
 
     @classmethod
     def from_rows(cls, rows: list[Vector[float]] | list[list[float]]) -> Matrix:
-        # need to add a rectangularity check
         if not rows:
             raise ValueError("Rows cannot be empty.")
+        if not all(len(rows[0]) == len(row) for row in rows):
+            raise ValueError("All rows must be of equal length.")
+        if len(rows[0]) == 0:
+            raise ValueError("Matrices must have at least one column.")
         if isinstance(rows[0], list):
-            rows = [Vector(r) for r in rows]
+            rows = [Vector(row) for row in rows]
         elif not isinstance(rows[0], Vector):
                 raise TypeError("Rows must be list of lists or list of Vectors.")
         return cls(rows)
 
     @classmethod
     def from_cols(cls, cols: list[list[float]] | list[Vector[float]]) -> Matrix:
-        #add a rectangularity check
         if not cols:
-            raise ValueError("Cols can not be empty.")
+            raise ValueError("Columns cannot be empty.")
+        if not all(len(cols[0]) == len(col) for col in cols):
+            raise ValueError("All columns must be same length.")
+        if len(cols[0]) == 0:
+            raise ValueError("Matrices must have at least one row.")
         elif not isinstance(cols[0], (list, Vector)):
             raise TypeError("Columns must be list of lists or list of Vectors.")
-        cols = [Vector([col[i] for col in cols]) for i in range(0, len(cols[0]))]
-        return cls(cols)
+        rows = [Vector([col[i] for col in cols]) for i in range(0, len(cols[0]))]
+        return cls(rows)
+
+    @classmethod
+    def zeros(cls, r: int, c: int) -> Matrix:
+        if not (isinstance(r, int) and isinstance(c, int)):
+            raise TypeError("Rows and columns must be specified as integers.")
+        if r <= 0 or c <= 0:
+            raise ValueError("Matrix must have greater than zero rows and columns.")
+        return cls([Vector([0 for _ in range(0, c)]) for _ in range(0, r)])
+
+    @classmethod
+    def ones(cls, r: int, c: int) -> Matrix:
+        if not (isinstance(r, int) and isinstance(c, int)):
+            raise TypeError("Rows and columns must be specified as integers.")
+        if r <= 0 or c <= 0:
+            raise ValueError("Matrix must have greater than zero rows and columns.")
+        return cls([Vector([1 for _ in range(0, c)]) for _ in range(0, r)])
+
+    @classmethod
+    def eye(cls, n: int) -> Matrix:
+        if not isinstance(n, int):
+            raise TypeError("Matrix dimensions must be specified as an integer.")
+        if n <= 0:
+            raise ValueError("Matrix dimensions must be greater than zero.")
+        mtrx = Matrix.zeros(n, n)
+        for i in range(0,n):
+            mtrx[i][i] = 1
+        return mtrx
 
 
-rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
+
+'''rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_cols(rows)
 print(mtrx1)
-print(mtrx2)
+print(mtrx2)'''
+print(Matrix.zeros(3, 4))
