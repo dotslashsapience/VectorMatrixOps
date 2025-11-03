@@ -2,10 +2,13 @@
 from __future__ import annotations
 import math
 import numpy as np
+from typing import TypeVar, Generic
+
+T = TypeVar("T", int, float)
 
 EPS = 1e-12
 
-class Vector:
+class Vector(Generic[T]):
     values: list[float]
 
     def __init__(self, values: list[float]) -> None:

@@ -10,13 +10,17 @@ EPS = 1e-12
 class Matrix:
     rows = list[Vector]
 
-    def __init__(self, rows: list[Vector]):
+    def __init__(self, rows: list[Vector[float]] | list[list[float]]):
         if not rows:
             raise ValueError("Matrix cannot be empty.")
-        elif not all(len(rows[0]) == len(row) for row in rows):
+        if not all(len(rows[0]) == len(row) for row in rows):
             raise ValueError("All rows must be of same length.")
-        else:
+        if isinstance(rows[0], Vector):
+            self.rows = [row for row in rows]
+        elif isinstance(rows[0], list):
             self.rows = [Vector(row) for row in rows]
+        else:
+            raise TypeError("Rows must be list of lists or list of Vectors.")
 
     def __repr__(self) -> str:
         inner = ",\n ".join(row.raw_repr() for row in self.rows)
@@ -128,9 +132,12 @@ class Matrix:
                     return False
         return True
 
+    def sum(self) -> float:
+        return math.fsum(val for row in self for val in row)
+
+
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
+mtrx = Matrix(rows)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
-print(mtrx1 == mtrx2)
-mtrx2[3][2] = 5
-print(mtrx1 == mtrx2)
+print(mtrx1.sum())
