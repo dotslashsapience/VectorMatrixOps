@@ -157,6 +157,16 @@ class Matrix:
     def ncols(self) -> int:
         return len(self[0])
 
+    def row(self, i: int) -> Vector:
+        if not isinstance(i, int):
+            raise TypeError("Row must be specified by an integer.")
+        return self[i]
+
+    def col(self, j: int) -> Vector:
+        if not isinstance(j, int):
+            raise TypeError("Column must be specified by an integer")
+        return Vector([row[j] for row in self])
+
 
 
 
@@ -165,4 +175,6 @@ mtrx = Matrix.eye(3)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
 
-print(mtrx1.frobenius())
+print(mtrx1)
+print(mtrx1.row(1))
+print(mtrx1.col(1))
