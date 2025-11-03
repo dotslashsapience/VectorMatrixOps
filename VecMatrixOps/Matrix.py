@@ -117,9 +117,20 @@ class Matrix:
         random.seed()
         return cls([Vector([random.uniform(lo, hi) for _ in range(0, c)]) for _ in range(0, r)])
 
-'''rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
+    def __eq__(self, other: Matrix) -> bool:
+        if not isinstance(other, Matrix):
+            raise TypeError("Matrices can only be compared to other matrices.")
+        if self.shape != other.shape:
+            return False
+        for i in range(0, self.shape[0]):
+            for j in range(0, self.shape[1]):
+                if not math.isclose(self[i][j], other[i][j], abs_tol=EPS):
+                    return False
+        return True
+
+rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx1 = Matrix.from_rows(rows)
-mtrx2 = Matrix.from_cols(rows)
-print(mtrx1)
-print(mtrx2)'''
-print(Matrix.random(3, 4, -1.0, 1.0))
+mtrx2 = Matrix.from_rows(rows)
+print(mtrx1 == mtrx2)
+mtrx2[3][2] = 5
+print(mtrx1 == mtrx2)
