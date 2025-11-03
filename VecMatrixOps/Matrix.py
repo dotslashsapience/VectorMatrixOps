@@ -146,6 +146,9 @@ class Matrix:
             raise ValueError("Trace can only be conducted on square matrices.")
         return math.fsum(self[i][i] for i in range(0, len(self)))
 
+    def frobenius(self) -> float:
+        return math.sqrt(math.fsum((val ** 2) for row in self for val in row))
+
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx = Matrix.eye(3)
