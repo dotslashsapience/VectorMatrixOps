@@ -149,10 +149,20 @@ class Matrix:
     def frobenius(self) -> float:
         return math.sqrt(math.fsum((val ** 2) for row in self for val in row))
 
+    @property
+    def nrows(self) -> int:
+        return len(self)
+
+    @property
+    def ncols(self) -> int:
+        return len(self[0])
+
+
+
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx = Matrix.eye(3)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
 
-print(mtrx1.trace())
+print(mtrx1.frobenius())
