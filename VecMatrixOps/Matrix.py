@@ -10,7 +10,7 @@ EPS = 1e-12
 class Matrix:
     rows = list[Vector]
 
-    def __init__(self, rows: list[Vector[float]] | list[list[float]]):
+    def __init__(self, rows: list[Vector[float]] | list[list[float]]) -> Matrix:
         if not rows:
             raise ValueError("Matrix cannot be empty.")
         if not all(len(rows[0]) == len(row) for row in rows):
@@ -167,7 +167,14 @@ class Matrix:
             raise TypeError("Column must be specified by an integer")
         return Vector([row[j] for row in self])
 
-
+    def set_row(self, i: int, v: Vector[float] | list[float]) -> None:
+        if not isinstance(i, int):
+            raise TypeError("Row must be specified by an integer")
+        if not isinstance(v, (Vector, list)):
+            raise TypeError("Rows must be a list or Vector of floats")
+        if isinstance(v, list):
+            v = Vector(v)
+        self[i] = v
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
