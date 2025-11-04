@@ -9,15 +9,15 @@ T = TypeVar("T", int, float)
 EPS = 1e-12
 
 class Vector(Generic[T]):
-    values: list[float]
+    values: np.ndarray
 
     def __init__(self, values: list[float]) -> None:
         if not all(isinstance(v, (int, float)) for v in values):
             raise TypeError("All elements must be int or float")
-        self.values = [float(v) for v in values]
+        self.values = np.ndarray([float(v) for v in values], dtype=float)
 
     def __repr__(self) -> str:
-        return f"Vector({self.values})"
+        return f"Vector({self.values.tolist()})"
 
     def raw_repr(self) -> str:
         return repr(self.values)
@@ -30,7 +30,7 @@ class Vector(Generic[T]):
 
     def __getitem__(self, key: int | slice) -> float | Vector:
         if isinstance(key, slice):
-            return Vector(self.values[key])
+            return Vector(self.values[key].tolist())
         elif isinstance(key, int):
             return self.values[key]
         return NotImplemented
@@ -39,7 +39,7 @@ class Vector(Generic[T]):
         if isinstance(key, int):
             self.values[key] = float(val)
         elif isinstance(key, slice):
-            self.values[key] = [float(v) for v in val]
+            self.values[key] = np.asarray(val, dtype=float)
         else:
             raise TypeError("Indices must be integers or slices.")
 
@@ -53,7 +53,7 @@ class Vector(Generic[T]):
         return cls(lst)
 
     def tolist(self) -> list[float]:
-        return self.values
+        return self.values.tolist()
 
     @property
     def shape(self) -> tuple[int]:
@@ -62,17 +62,18 @@ class Vector(Generic[T]):
     def __eq__(self, other: Vector) -> bool:
         if not isinstance(other, (Vector)) or len(self) != len(other):
             return False
-        return all(math.isclose(a, b, abs_tol=EPS) for a,b in zip(self, other))
-
+        return bool(np.allclose(self.values, other.values, atol=EPS))
 
     def __add__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
-                raise ValueError("Invalid '+' operation. Vectors must be of equal length to add.")
-            return Vector([a + b for a,b in zip(self, other)])
+                raise ValueError("Vectors must be of equal length to add.")
+            arr = self.values + other.values
         elif isinstance(other, (float, int)):
-            return Vector([val + other for val in self])
-        return NotImplemented
+            arr = self.values + float(other)
+        else:
+            return NotImplemented
+        return Vector(arr.tolist())
 
     def __radd__(self, other: int | float) -> Vector:
         if isinstance(other, (float, int)):
@@ -83,45 +84,47 @@ class Vector(Generic[T]):
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '+=' operation. In place addition can only be conducted with Vectors of equal length.")
-            self[:] = [a + b for a,b in zip(self, other)]
-            return self
+            self.values = self.values + other.values
         elif isinstance(other, (float, int)):
-            self[:] = [val + other for val in self]
-            return self
-        return NotImplemented
+            self.values = self.values + float(other)
+        else:
+            return NotImplemented
+        return self
 
     def __sub__(self, other: Vector | float | int) -> Vector:
-        if not isinstance(other, (float, int, Vector)):
-            return NotImplemented
-        elif isinstance(other, Vector):
+        if isinstance(other, Vector):
             if len(self) != len(other):
-                raise ValueError("Vector subtraction can only be conducted on vectors of equal length.")
-            return Vector([a - b for a,b in zip(self, other)])
+                raise ValueError("Vectors must be of equal length to subtract.")
+            arr = self.values - other.values
+        elif isinstance(other, (float, int)):
+            arr = self.values - float(other)
         else:
-            return Vector([val - other for val in self])
+            return NotImplemented
+        return Vector(arr.tolist())
 
 
     def __isub__(self, other: float | int | Vector) -> Vector:
-        if not isinstance(other, (float, int, Vector)):
-            return NotImplemented
-        elif isinstance(other, Vector):
+        if isinstance(other, Vector):
             if len(self) != len(other):
-                raise ValueError("Invalid -= operation. In place subtraction can only be conducted with Vectors of equal length.")
-            self[:] = [a - b for a,b in zip(self, other)]
-            return self
+                raise ValueError("Vectors must be of equal length for in place subtraction.")
+            self.values = self.values - other.values
+        elif isinstance(other, (float, int)):
+            self.values = self.values - float(other)
         else:
-            self[:] = [val - other for val in self]
-            return self
+            return NotImplemented
+        return self
 
 
     def __mul__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '*' operation. Vectors must be of equal length for element-wise multiplication.")
-            return Vector([a * b for a,b in zip(self, other)])
+            arr = self.values * other.values
         elif isinstance(other, (float, int)):
-            return Vector([val * other for val in self])
-        return NotImplemented
+            arr = self.values * float(other)
+        else:
+            return NotImplemented
+        return Vector(arr.tolist())
 
     def __rmul__(self, other: float | int) -> Vector:
         if isinstance(other, (float, int)):

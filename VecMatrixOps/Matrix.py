@@ -318,18 +318,19 @@ class Matrix:
     def matvec(self, v: Vector) -> Vector:
         return self @ v
 
-    def vecmat(self, v:) -> Vector:
-        return (self.transpose @ v).transpose()
+    def vecmat(self, v: Vector) -> Vector:
+        return self.transpose @ v
 
     def to_numpy(self) -> np.ndarray:
         """Return a NumPy ndarray copy of this Matrix."""
         return np.array([[val for val in row] for row in self], dtype=float)
 
+    @classmethod
     def from_numpy(self, arr: np.ndarray) -> Matrix:
         """Create an array from a NumPy ndarray"""
         if arr.ndim != 2:
             raise ValueError("Input array must be a 2-dimensional array to convert to Matrix.")
-        return Matrix([Vector(row.tolist()) for row in arr])
+        return cls([Vector(row.tolist()) for row in arr])
 
     def __array__(self, dtype=None) -> np.ndarray:
         """Allow implicit conversion when passing Matrix to NumPy functions."""
