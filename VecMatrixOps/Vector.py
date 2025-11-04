@@ -257,7 +257,10 @@ class Vector(Generic[T]):
             raise ValueError("max is undefined for empty vector.")
         return min(self)
 
-
+    def append(self, val: float | int) -> None:
+        if not isinstance(val, (float, int)):
+            raise TypeError("Only float values may be appended to Vectors.")
+        self.values.append(float(val))
 
 
 

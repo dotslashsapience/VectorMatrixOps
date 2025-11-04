@@ -203,6 +203,18 @@ class Matrix:
             raise TypeError("Argument must be a callable function.")
         return Matrix([[fn(val) for val in row] for row in self])
 
+    def __add__(self, other: Matrix | float | int) -> Matrix:
+        if isinstance(other, Matrix):
+            if self.shape != other.shape:
+                raise ValueError("Matrices must be of same dimensions for element-wise addition.")
+            rows = []
+            for i in range(0, self.nrows):
+                row = []
+                for j in range(0, self.ncols):
+                    row.append(self[i][j] + other[i][j])
+                rows.append(row)
+            return Matrix(rows)
+
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
