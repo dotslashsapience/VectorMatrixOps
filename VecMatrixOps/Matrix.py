@@ -41,7 +41,7 @@ class Matrix:
         else:
             return NotImplemented
 
-    def __setitem__(self, key: int | slice | tuple[int, int], val: Vector | list[float] | float) -> None:
+    def __setitem__(self, key: int | slice | tuple[int, int], val: Vector[float] | list[float] | float) -> None:
         if isinstance(key, tuple):
             i, j = key
             self.rows[i][j] = val
@@ -172,16 +172,31 @@ class Matrix:
             raise TypeError("Row must be specified by an integer")
         if not isinstance(v, (Vector, list)):
             raise TypeError("Rows must be a list or Vector of floats")
+        if len(v) != self.ncols:
+            raise ValueError("Incorrect row length")
         if isinstance(v, list):
             v = Vector(v)
         self[i] = v
+
+    def set_col(self, j: int, v: Vector[float] | list[float]) -> None:
+        if not isinstance(j, int):
+            raise TypeError("Column must be specified by an integer.")
+        if not isinstance(v, (Vector, list)):
+            raise TypeError("Columns must be Vector or list.")
+        if not isinstance(v[0], (int, float)):
+            raise TypeError("Column values must be floats.")
+        if len(v) != self.nrows:
+            raise ValueError("Incorrect column length.")
+        for i, val in enumerate(v):
+            self[i][j] = val
+
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx = Matrix.eye(3)
 mtrx1 = Matrix.from_rows(rows)
 mtrx2 = Matrix.from_rows(rows)
-
+col = Vector([5,5,5,5])
 print(mtrx1)
-print(mtrx1.row(1))
-print(mtrx1.col(1))
+mtrx1.set_col(2, col)
+print(mtrx1)
