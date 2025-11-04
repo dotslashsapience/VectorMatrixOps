@@ -292,8 +292,7 @@ class Matrix:
     def __matmul__(self, other: Matrix | Vector) -> Matrix | Vector:
         # if self.shape == (m, n) and other.shape == (n, p) -> Matrix(m, p)
         # if other is Vector(n) -> Vector(m)
-        # github check
-
+        # github check 2
 
 
 
