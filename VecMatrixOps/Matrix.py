@@ -275,6 +275,21 @@ class Matrix:
             return self * other
         raise TypeError("Multiplication supported only between matrices and scalars.")
 
+    def __truediv__(self, other: float | int) -> Matrix:
+        if isinstance(other, (float, int)):
+            return Matrix([
+                Vector([val / other for val in row])
+                for row in self])
+        raise TypeError("True division only supported between matrix and scalar.")
+
+    def __itruediv__(self, other: float | int) -> Matrix:
+        if isinstance(other, (float, int)):
+            for row in self:
+                row[:] = [val / other for val in row]
+            return self
+        raise TypeError("In place division only supported between matrix and scalar.")
+
+
 
 
 
@@ -287,4 +302,6 @@ m2 = m1 * 2
 m3 = m2 * m2
 print(m1)
 print(m2)
+print(m3)
+m3 /= 2
 print(m3)
