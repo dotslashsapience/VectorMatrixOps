@@ -244,16 +244,31 @@ class Matrix:
                 for row in self])
         raise TypeError("Subtraction only supported between Matrices and scalars.")
 
+    def __isub__(self, other: Matrix | float | int) -> Matrix:
+        if isinstance(other, Matrix):
+            if self.shape != other.shape:
+                raise ValueError("Matrices must have same dimensions for in place subtraction.")
+            for row_a,row_b in zip(self, other):
+                row_a[:] = [a-b for a,b in zip(row_a, row_b)]
+            return self
+        elif isinstance(other, (float, int)):
+            for row in self:
+                row[:] = [val - float(other) for val in row]
+            return self
+        raise TypeError("In-place subtraction supported only between Matrices and scalars.")
+
+
 
 
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx1 = Matrix.random(4, 3, 0, 9)
-mtrx2 = Matrix(rows)
-col = Vector([5,5,5,5])
+mtrx2 = mtrx1 - 1
+mtrx3 = mtrx1 - mtrx2
 print(mtrx1)
-
 print(mtrx2)
-print(mtrx1 - mtrx2)
+mtrx1 -= mtrx2
+print(mtrx1)
+print(mtrx3 == mtrx1)
 
