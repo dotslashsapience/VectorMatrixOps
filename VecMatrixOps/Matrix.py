@@ -1,5 +1,6 @@
 #VecMatrixOps/Matrix.py
 from __future__ import annotations
+from typing import Callable
 from .Vector import Vector
 import random
 import math
@@ -187,16 +188,28 @@ class Matrix:
             raise TypeError("Column values must be floats.")
         if len(v) != self.nrows:
             raise ValueError("Incorrect column length.")
-        for i, val in enumerate(v):
+        for i, val in enumerate(v): #type: tuple[int, float]
             self[i][j] = val
+
+    def transpose(self) -> Matrix:
+        return Matrix.from_cols(self.rows)
+
+    @property
+    def T(self) -> Matrix:
+        return self.transpose()
+
+    def apply(self, fn: Callable[[float], float]) -> Matrix:
+        if not callable(fn):
+            raise TypeError("Argument must be a callable function.")
+        return Matrix([[fn(val) for val in row] for row in self])
 
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
 mtrx = Matrix.eye(3)
 mtrx1 = Matrix.from_rows(rows)
-mtrx2 = Matrix.from_rows(rows)
+mtrx2 = Matrix.from_cols(rows)
 col = Vector([5,5,5,5])
 print(mtrx1)
-mtrx1.set_col(2, col)
-print(mtrx1)
+
+print(mtrx1.apply(math.sqrt))
