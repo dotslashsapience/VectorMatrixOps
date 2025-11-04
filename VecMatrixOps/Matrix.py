@@ -290,17 +290,47 @@ class Matrix:
         raise TypeError("In place division only supported between matrix and scalar.")
 
     def __matmul__(self, other: Matrix | Vector) -> Matrix | Vector:
-        # if self.shape == (m, n) and other.shape == (n, p) -> Matrix(m, p)
-        # if other is Vector(n) -> Vector(m)
-        # github check 2
+        if isinstance(other, Matrix):
+            if self.ncols != other.nrows:
+                raise ValueError("Invalid shapes for Matrix multiplication.")
+            result = []
+            for i in range(0, self.nrows):
+                row = []
+                for j in range(0, other.ncols):
+                    s = 0.0
+                    for k in range(self.ncols):
+                        s += self[i][k] * other[k][j]
+                    row.append(s)
+                result.append(Vector(row))
+            return Matrix(result)
+        elif isinstance(other, Vector):
+            if self.ncols != len(other):
+                raise ValueError("Matrix Columns must match Vector Length.")
+            result = []
+            for i in range(0, self.nrows):
+                s = 0.0
+                for j in range(0, self.ncols):
+                    s += self[i][j] * other[j]
+                result.append(s)
+            return Vector(result)
+        return NotImplemented
+
+    def matvec(self, v: Vector) -> Vector:
+        return self @ v
+
+    def vecmat(self, v:) -> Vector:
+        return (self.transpose @ v).transpose()
+
+
 
 
 
 m1 = Matrix.ones(3, 4)
 m2 = m1 * 2
 m3 = m2 * m2
+m2 = Matrix.from_cols(m2)
 print(m1)
 print(m2)
 print(m3)
-m3 /= 2
-print(m3)
+
+print(m2 @ m3)
