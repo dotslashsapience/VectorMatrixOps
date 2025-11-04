@@ -45,8 +45,12 @@ class Vector(Generic[T]):
 
 
     @classmethod
-    def from_list(cls, lst) -> Vector:
-        return Vector(lst)
+    def from_list(cls, lst: list[float]) -> Vector:
+        if not isinstance(lst, list):
+            raise TypeError("Honestly you should know better.")
+        if not isinstance(lst[0], (float, int)):
+            raise TypeError("Vectors can only be instantiated from a list of floats.")
+        return cls(lst)
 
     def tolist(self) -> list[float]:
         return self.values

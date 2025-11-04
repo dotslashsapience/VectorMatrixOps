@@ -134,7 +134,8 @@ class Matrix:
         return True
 
     def sum(self) -> float:
-        return math.fsum(val for row in self for val in row)
+        return math.fsum(val for row in self
+                         for val in row)
 
     def row_sum(self, i: int) -> float:
         return math.fsum(val for val in self[i])
@@ -148,7 +149,8 @@ class Matrix:
         return math.fsum(self[i][i] for i in range(0, len(self)))
 
     def frobenius(self) -> float:
-        return math.sqrt(math.fsum((val ** 2) for row in self for val in row))
+        return math.sqrt(math.fsum((val ** 2) for row in self
+                                   for val in row))
 
     @property
     def nrows(self) -> int:
@@ -201,27 +203,31 @@ class Matrix:
     def apply(self, fn: Callable[[float], float]) -> Matrix:
         if not callable(fn):
             raise TypeError("Argument must be a callable function.")
-        return Matrix([[fn(val) for val in row] for row in self])
+        return Matrix([[fn(val) for val in row]
+                       for row in self])
 
     def __add__(self, other: Matrix | float | int) -> Matrix:
         if isinstance(other, Matrix):
             if self.shape != other.shape:
-                raise ValueError("Matrices must be of same dimensions for element-wise addition.")
-            rows = []
-            for i in range(0, self.nrows):
-                row = []
-                for j in range(0, self.ncols):
-                    row.append(self[i][j] + other[i][j])
-                rows.append(row)
-            return Matrix(rows)
+                raise ValueError("Matrices must have the same dimensions for element-wise addition.")
+            return Matrix([
+                Vector([a + b for a,b in zip(row_a, row_b)])
+                for row_a,row_b in zip(self, other)
+            ])
+        elif isinstance(other, (float, int)):
+            return Matrix([[(val + float(other)) for val in row]
+                           for row in self])
+        raise TypeError("Addition supported only between Matrix and scalar.")
 
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
-mtrx = Matrix.eye(3)
-mtrx1 = Matrix.from_rows(rows)
-mtrx2 = Matrix.from_cols(rows)
+mtrx1 = Matrix.random(4, 3, 0, 9)
+mtrx2 = Matrix(rows)
+
 col = Vector([5,5,5,5])
 print(mtrx1)
 
-print(mtrx1.apply(math.sqrt))
+print(mtrx2)
+print(mtrx1 + mtrx2)
+
