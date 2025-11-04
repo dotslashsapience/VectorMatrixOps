@@ -212,8 +212,7 @@ class Matrix:
                 raise ValueError("Matrices must have the same dimensions for element-wise addition.")
             return Matrix([
                 Vector([a + b for a,b in zip(row_a, row_b)])
-                for row_a,row_b in zip(self, other)
-            ])
+                for row_a,row_b in zip(self, other)])
         elif isinstance(other, (float, int)):
             return Matrix([[(val + float(other)) for val in row]
                            for row in self])
@@ -232,6 +231,21 @@ class Matrix:
             return self
         raise TypeError("In place addition supported only between Matrix and scalars.")
 
+    def __sub__(self, other: Matrix | float | int) -> Matrix:
+        if isinstance(other, Matrix):
+            if self.shape != other.shape:
+                raise ValueError("Matrices must have the same dimensions for element-wise subtraction")
+            return Matrix([
+                Vector([a - b for a,b in zip(row_a, row_b)])
+                for row_a, row_b in zip(self,other)])
+        elif isinstance(other, (float, int)):
+            return Matrix([
+                [val - float(other) for val in row]
+                for row in self])
+        raise TypeError("Subtraction only supported between Matrices and scalars.")
+
+
+
 
 
 rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
@@ -241,6 +255,5 @@ col = Vector([5,5,5,5])
 print(mtrx1)
 
 print(mtrx2)
-mtrx1 += mtrx2
-print(mtrx1)
+print(mtrx1 - mtrx2)
 
