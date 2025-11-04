@@ -289,8 +289,7 @@ class Matrix:
             return self
         raise TypeError("In place division only supported between matrix and scalar.")
 
-
-
+    def __matmul__(self, other: Matrix | Vector) -> Matrix | Vector:
 
 
 
