@@ -214,7 +214,7 @@ class Matrix:
                 Vector([a + b for a,b in zip(row_a, row_b)])
                 for row_a,row_b in zip(self, other)])
         elif isinstance(other, (float, int)):
-            return Matrix([[(val + float(other)) for val in row]
+            return Matrix([Vector([(val + float(other)) for val in row])
                            for row in self])
         raise TypeError("Addition supported only between Matrix and scalar.")
 
@@ -240,7 +240,7 @@ class Matrix:
                 for row_a, row_b in zip(self,other)])
         elif isinstance(other, (float, int)):
             return Matrix([
-                [val - float(other) for val in row]
+                Vector([val - float(other) for val in row])
                 for row in self])
         raise TypeError("Subtraction only supported between Matrices and scalars.")
 
@@ -257,18 +257,34 @@ class Matrix:
             return self
         raise TypeError("In-place subtraction supported only between Matrices and scalars.")
 
+    def __mul__(self, other: Matrix | float | int) -> Matrix:
+        if isinstance(other, Matrix):
+            if self.shape != other.shape:
+                raise ValueError("Matrices must have same dimensions for element-wise multiplication.")
+            return Matrix([
+                [a * b for a,b in zip(row_a, row_b)]
+                for row_a,row_b in zip(self, other)])
+        if isinstance(other, (float, int)):
+            return Matrix([
+                Vector([val * other for val in row])
+                for row in self])
+        raise TypeError("Multiplication only supported between matrices and scalars.")
+
+    def __rmul__(self, other: float | int) -> Matrix:
+        if isinstance(other, (float, int)):
+            return self * other
+        raise TypeError("Multiplication supported only between matrices and scalars.")
 
 
 
 
 
-rows = [[2, 3, 5], [2 ,5 , 9], [9, 2, 5], [9, 2, 3]]
-mtrx1 = Matrix.random(4, 3, 0, 9)
-mtrx2 = mtrx1 - 1
-mtrx3 = mtrx1 - mtrx2
-print(mtrx1)
-print(mtrx2)
-mtrx1 -= mtrx2
-print(mtrx1)
-print(mtrx3 == mtrx1)
 
+
+
+m1 = Matrix.ones(3, 4)
+m2 = m1 * 2
+m3 = m2 * m2
+print(m1)
+print(m2)
+print(m3)
