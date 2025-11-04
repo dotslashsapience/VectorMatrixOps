@@ -321,16 +321,19 @@ class Matrix:
     def vecmat(self, v:) -> Vector:
         return (self.transpose @ v).transpose()
 
+    def to_numpy(self) -> np.ndarray:
+        """Return a NumPy ndarray copy of this Matrix."""
+        return np.array([[val for val in row] for row in self], dtype=float)
+
+    def from_numpy(self, arr: np.ndarray) -> Matrix:
+        """Create an array from a NumPy ndarray"""
+        if arr.ndim != 2:
+            raise ValueError("Input array must be a 2-dimensional array to convert to Matrix.")
+        return Matrix([Vector(row.tolist()) for row in arr])
+
+    def __array__(self, dtype=None) -> np.ndarray:
+        """Allow implicit conversion when passing Matrix to NumPy functions."""
+        return np.array([[val for val in row] for row in self], dtype=dtype)
 
 
 
-
-m1 = Matrix.ones(3, 4)
-m2 = m1 * 2
-m3 = m2 * m2
-m2 = Matrix.from_cols(m2)
-print(m1)
-print(m2)
-print(m3)
-
-print(m2 @ m3)
