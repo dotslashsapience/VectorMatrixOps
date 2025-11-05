@@ -11,10 +11,17 @@ EPS = 1e-12
 class Vector(Generic[T]):
     values: np.ndarray
 
-    def __init__(self, values: list[float]) -> None:
-        if not all(isinstance(v, (int, float)) for v in values):
+    def __init__(self, values: list[float] | np.ndarray) -> None:
+        if isinstance(values, list):
+            arr = np.array(values, dtype=float, copy=True)
+        elif isinstance(values, np.ndarray):
+            assert values.ndim==1
+            arr = np.array(values, dtype=float, copy=True)
+        else:
             raise TypeError("All elements must be int or float")
-        self.values = np.ndarray([float(v) for v in values], dtype=float)
+        self.values = arr
+
+
 
     def __repr__(self) -> str:
         return f"Vector({self.values.tolist()})"
@@ -30,7 +37,7 @@ class Vector(Generic[T]):
 
     def __getitem__(self, key: int | slice) -> float | Vector:
         if isinstance(key, slice):
-            return Vector(self.values[key].tolist())
+            return Vector(self.values[key])
         elif isinstance(key, int):
             return self.values[key]
         return NotImplemented
@@ -48,6 +55,8 @@ class Vector(Generic[T]):
     def from_list(cls, lst: list[float]) -> Vector:
         if not isinstance(lst, list):
             raise TypeError("Honestly you should know better.")
+        if not lst:
+            raise ValueError("Vector cannot be empty.")
         if not isinstance(lst[0], (float, int)):
             raise TypeError("Vectors can only be instantiated from a list of floats.")
         return cls(lst)
@@ -68,12 +77,10 @@ class Vector(Generic[T]):
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vectors must be of equal length to add.")
-            arr = self.values + other.values
+            return Vector(self.values + other.values)
         elif isinstance(other, (float, int)):
-            arr = self.values + float(other)
-        else:
-            return NotImplemented
-        return Vector(arr.tolist())
+            return Vector(self.values + float(other))
+        return NotImplemented
 
     def __radd__(self, other: int | float) -> Vector:
         if isinstance(other, (float, int)):
@@ -84,9 +91,9 @@ class Vector(Generic[T]):
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '+=' operation. In place addition can only be conducted with Vectors of equal length.")
-            self.values = self.values + other.values
+            self.values += other.values
         elif isinstance(other, (float, int)):
-            self.values = self.values + float(other)
+            self.values += float(other)
         else:
             return NotImplemented
         return self
@@ -95,21 +102,19 @@ class Vector(Generic[T]):
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vectors must be of equal length to subtract.")
-            arr = self.values - other.values
+            return Vector(self.values - other.values)
         elif isinstance(other, (float, int)):
-            arr = self.values - float(other)
-        else:
-            return NotImplemented
-        return Vector(arr.tolist())
+            return Vector(self.values - float(other))
+        return NotImplemented
 
 
     def __isub__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vectors must be of equal length for in place subtraction.")
-            self.values = self.values - other.values
+            self.values -= other.values
         elif isinstance(other, (float, int)):
-            self.values = self.values - float(other)
+            self.values -= float(other)
         else:
             return NotImplemented
         return self
@@ -119,12 +124,11 @@ class Vector(Generic[T]):
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Invalid '*' operation. Vectors must be of equal length for element-wise multiplication.")
-            arr = self.values * other.values
+            return Vector(self.values * other.values)
         elif isinstance(other, (float, int)):
-            arr = self.values * float(other)
+            return Vector(self.values * float(other))
         else:
             return NotImplemented
-        return Vector(arr.tolist())
 
     def __rmul__(self, other: float | int) -> Vector:
         if isinstance(other, (float, int)):
@@ -134,75 +138,73 @@ class Vector(Generic[T]):
     def __imul__(self, other: float | int | Vector) -> Vector:
         if isinstance(other, Vector):
             if len(self) != len(other):
-                raise ValueError("Invalid '*' operation. Vectors must be of equal length for element-wise multiplication.")
-            self[:] = [a * b for a,b in zip(self, other)]
-            return self
+                raise ValueError("Vectors must be of equal length for in place multiplication.")
+            self.values *= other.values
         elif isinstance(other, (float, int)):
-            self[:] = [val * other for val in self]
-            return self
-        return NotImplemented
+            self.values *= float(other)
+        else:
+            return NotImplemented
+        return self
 
     def __matmul__(self, other: Vector) -> float:
         if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vectors must be of equal length for dot product.")
-            return sum(self[i] * other[i] for i in range(len(self)))
+            return float(self.values @ other.values)
         return NotImplemented
 
     def __truediv__(self, other: float | int | Vector) -> Vector:
-        if not isinstance(other, (float, int, Vector)):
-            return NotImplemented
-        elif isinstance(other, Vector):
+        if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vector division can only be conducted on vectors of equal length.")
-            if all(abs(val) > EPS for val in other):
-                return Vector([a / b for a,b in zip(self, other)])
-            else:
+            if np.any(np.abs(other.values) < EPS):
                 raise ZeroDivisionError("Division by Zero: zero values within vector.")
-        elif abs(other) < EPS:
-            raise ZeroDivisionError("Division by zero.")
-        return Vector([val / other for val in self])
+            return Vector(self.values / other.values)
+        elif isinstance(other, (float, int)):
+            if abs(other) < EPS:
+                raise ZeroDivisionError("Division by zero.")
+            return Vector(self.values / other)
+        return NotImplemented
 
 
     def __itruediv__(self, other: float | int | Vector) -> Vector:
-        if not isinstance(other, (float, int, Vector)):
-            return NotImplemented
-        elif isinstance(other, Vector):
+        if isinstance(other, Vector):
             if len(self) != len(other):
                 raise ValueError("Vector division can only be conducted on vectors of equal length.")
-            if all(abs(val) > EPS for val in other):
-                self[:] = [a / b for a,b in zip(self, other)]
-                return self
-            else:
+            if np.any(np.abs(other.values) < EPS):
                 raise ZeroDivisionError("Division by Zero: zero values within vector.")
-        elif abs(other) < EPS:
-            raise ZeroDivisionError("Division by zero.")
-        self[:] = [val / other for val in self]
+            self.values /= other.values
+        elif isinstance(other, (float, int)):
+            if abs(other) < EPS:
+                raise ZeroDivisionError("Division by zero.")
+            self.values /= other
+        else:
+            return NotImplemented
         return self
 
 
     def dot(self, other: Vector) -> float:
-        return self @ other
+        return float(self.values @ other.values)
 
     def norm(self, p: float = 2) -> float:
-        """For most cases this is used to return the absolute value or the magnitude of the vector.
-        There are additional uses in ML"""
-        if not isinstance(p, (float, int)):
-            return NotImplemented
-        if p == float('inf'):
-            return max(abs(val) for val in self) if len(self) else 0.0
-        if p == 0:
-            return float(sum(1 for val in self if abs(val) > EPS))
-        if p <= 0:
-            raise ValueError("norm: p must be > 0 (or 0/inf handled specially)")
-        return sum(abs(val) ** p for val in self) ** (1/p)
+        """Compute the L^p norm (magnitude) of the vector."""
+        if isinstance(p, (int, float)):
+            if p == np.inf:
+                return float(np.max(np.abs(self.values)))
+            elif p == 0:
+                return float(np.count_nonzero(~np.isclose(self.values, 0, atol=EPS)))
+            elif p > 0:
+                return float(np.sum(np.abs(self.values)**p) ** (1/p))
+            elif p < 0:
+                raise ValueError("norm: p must be > 0 (or 0/inf handled specially)")
+        raise TypeError("p must be an int or float.")
 
     def normalized(self) -> Vector:
         """Returns the unit vector in the direction of the input vector"""
         n = self.norm(2)
         if n < EPS:
             raise ValueError("Cannot normalize a zero or near-zero vector.")
-        return type(self)([val / n for val in self])
+        return self / n
 
     def distance(self, other: Vector, p: float = 2) -> float:
         """Returns the distance between the tips of 2 vectors, Manhattan Distance, Euclidean Distance
@@ -217,36 +219,33 @@ class Vector(Generic[T]):
             return NotImplemented
         n1, n2 = self.norm(), other.norm()
         if n1 < EPS or n2 < EPS:
-            raise ValueError("Angle is undefined for zero or near zero vectors")
-        cos = (self @ other) / (n1 * n2)
-        cos = max(-1.0, min(1.0, cos))
-        if degrees:
-            return math.acos(cos) * (180/math.pi)
-        else:
-            return math.acos(cos)
+            raise ValueError("Angle is undefined for zero or near-zero vectors")
+        cos = np.clip((self @ other) / (n1 * n2), -1.0, 1.0)
+        angle_rad = np.arccos(cos)
+        return float(np.degrees(angle_rad) if degrees else angle_rad)
 
     def project_onto(self, other: Vector) -> Vector:
         """Returns a projection of one vector in the direction of the other"""
         if not isinstance(other, Vector):
             return NotImplemented
         denom = other @ other
-        if denom < EPS:
+        if abs(denom) < EPS:
             raise ValueError("Cannot project onto zero vector.")
         scale = (self @ other) / denom
-        return type(self)([scale * val for val in other])
+        return other * scale
 
     def to_numpy(self) -> np.ndarray:
-        return np.array(self.values, dtype=float)
+        return self.values.copy()
 
     @classmethod
     def from_numpy(cls, arr: np.ndarray) -> Vector:
-        return cls(arr.tolist())
+        return cls(arr)
 
     def __array__(self, dtype=None) -> np.ndarray:
-        return np.array(self.values, dtype=dtype)
+        return np.asarray(self.values, dtype=dtype)
 
     def sum(self) -> float:
-        return math.fsum(val for val in self)
+        return float(np.sum(self.values))
 
     def mean(self) -> float:
         if len(self) == 0:
@@ -257,17 +256,17 @@ class Vector(Generic[T]):
     def max(self) -> float:
         if len(self) == 0:
             raise ValueError("max is undefined for empty vector.")
-        return max(self)
+        return np.max(self.values)
 
     def min(self) -> float:
         if len(self) == 0:
-            raise ValueError("max is undefined for empty vector.")
-        return min(self)
+            raise ValueError("min is undefined for empty vector.")
+        return np.min(self.values)
 
     def append(self, val: float | int) -> None:
         if not isinstance(val, (float, int)):
             raise TypeError("Only float values may be appended to Vectors.")
-        self.values.append(float(val))
+        self.values = np.append(self.values, float(val))
 
 
 
