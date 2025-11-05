@@ -1,164 +1,123 @@
 #VecMatrixOps/Matrix.py
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, Any
 from .Vector import Vector
-import random
-import math
 import numpy as np
+from numpy.typing import NDArray
 
 EPS = 1e-12
 
 class Matrix:
-    rows = list[Vector]
+    __array_priority__ = 1000
+    _a: NDArray[np.float64]
 
-    def __init__(self, rows: list[Vector[float]] | list[list[float]]) -> Matrix:
-        if not rows:
-            raise ValueError("Matrix cannot be empty.")
-        if not all(len(rows[0]) == len(row) for row in rows):
-            raise ValueError("All rows must be of same length.")
-        if isinstance(rows[0], Vector):
-            self.rows = [row for row in rows]
-        elif isinstance(rows[0], list):
-            self.rows = [Vector(row) for row in rows]
+    def __init__(self, data: list[list[float]] | np.ndarray | Matrix, *, copy: bool=True, dtype=float):
+        if isinstance(data, Matrix):
+            arr = data._a
         else:
-            raise TypeError("Rows must be list of lists or list of Vectors.")
+            arr = np.asarray(data, dtype=dtype)
+            if arr.ndim != 2:
+                raise ValueError("Matrix must be 2D")
+        if arr.dtype == dtype:
+            self._a = arr.copy() if copy else arr
+        else:
+            self._a = arr.astype(dtype)
+
+    def dtype(self):
+        return self._a.dtype
 
     def __repr__(self) -> str:
-        inner = ",\n ".join(row.raw_repr() for row in self.rows)
-        return f"Matrix([\n {inner}\n])"
+        body = np.array2string(self._a, separator=", ")
+        return f"Matrix(shape={self._a.shape}, dtype={self._a.dtype})\n{body}"
 
     def __len__(self) -> int:
-        return len(self.rows)
+        return len(self._a)
 
     def __iter__(self):
-        return iter(self.rows)
+        for row in self._a:
+            yield row
 
-    def __getitem__(self, key: int | slice | tuple[int, int]) -> Vector | slice | float:
-        if isinstance(key, tuple):
-            i, j = key
-            return self.rows[i][j]
-        elif isinstance(key, (int, slice)):
-            return self.rows[key]
-        else:
-            return NotImplemented
+    def __getitem__(self, key: int | slice | tuple[int, int]) -> Vector | float | Matrix:
+        out = self._a[key]
+        if isinstance(out, np.ndarray):
+            if out.ndim == 2:
+                return Matrix(out, copy=False)
+            elif out.ndim == 1:
+                return Vector(out)
+        return float(out)
 
-    def __setitem__(self, key: int | slice | tuple[int, int], val: Vector[float] | list[float] | float) -> None:
-        if isinstance(key, tuple):
-            i, j = key
-            self.rows[i][j] = val
-        elif isinstance(key, (int, slice)):
-            self.rows[key] = val
+    def __setitem__(self, key: int | slice | tuple[int, int], val: Vector[float] | list[float] | float | Matrix) -> None:
+        if isinstance(val, Matrix):
+            self._a[key] = val._a
+        elif isinstance(val, Vector):
+            self._a[key] = val.values
         else:
-            raise TypeError(f"Invalid key type: {type(key).__name__}")
+            self._a[key] = val
 
     @property
     def shape(self) -> tuple[int, int]:
-        return len(self.rows), len(self.rows[0])
+        return tuple(map(int, self._a.shape))
 
     @classmethod
     def from_rows(cls, rows: list[Vector[float]] | list[list[float]]) -> Matrix:
-        if not rows:
-            raise ValueError("Rows cannot be empty.")
-        if not all(len(rows[0]) == len(row) for row in rows):
-            raise ValueError("All rows must be of equal length.")
-        if len(rows[0]) == 0:
-            raise ValueError("Matrices must have at least one column.")
-        if isinstance(rows[0], list):
-            rows = [Vector(row) for row in rows]
-        elif not isinstance(rows[0], Vector):
-                raise TypeError("Rows must be list of lists or list of Vectors.")
-        return cls(rows)
+        return cls(np.asarray(rows, dtype=np.float64), copy=True)
 
     @classmethod
     def from_cols(cls, cols: list[list[float]] | list[Vector[float]]) -> Matrix:
-        if not cols:
-            raise ValueError("Columns cannot be empty.")
-        if not all(len(cols[0]) == len(col) for col in cols):
-            raise ValueError("All columns must be same length.")
-        if len(cols[0]) == 0:
-            raise ValueError("Matrices must have at least one row.")
-        elif not isinstance(cols[0], (list, Vector)):
-            raise TypeError("Columns must be list of lists or list of Vectors.")
-        rows = [Vector([col[i] for col in cols]) for i in range(0, len(cols[0]))]
-        return cls(rows)
+        return cls(np.asarray(cols, dtype=np.float64).T, copy=True)
 
     @classmethod
     def zeros(cls, r: int, c: int) -> Matrix:
-        if not (isinstance(r, int) and isinstance(c, int)):
-            raise TypeError("Rows and columns must be specified as integers.")
-        if r < 1 or c < 1:
-            raise ValueError("Matrix must have 1 or more rows and columns.")
-        return cls([Vector([0 for _ in range(0, c)]) for _ in range(0, r)])
+        if r < 1 or c < 1: raise ValueError("r and c must be >= 1.")
+        return cls(np.zeros((r, c), dtype=np.float64), copy=False)
 
     @classmethod
     def ones(cls, r: int, c: int) -> Matrix:
-        if not (isinstance(r, int) and isinstance(c, int)):
-            raise TypeError("Rows and columns must be specified as integers.")
-        if r < 1 or c < 1:
-            raise ValueError("Matrix must have 1 or more rows and columns.")
-        return cls([Vector([1 for _ in range(0, c)]) for _ in range(0, r)])
+        if r < 1 or c < 1: raise ValueError("r and c must be >= 1.")
+        return cls(np.ones((r, c), dtype=np.float64), copy=False)
 
     @classmethod
     def eye(cls, n: int) -> Matrix:
-        if not isinstance(n, int):
-            raise TypeError("Matrix dimensions must be specified as an integer.")
-        if n < 1:
-            raise ValueError("Matrix must have 1 or more rows and columns.")
-        mtrx = Matrix.zeros(n, n)
-        for i in range(0,n):
-            mtrx[i][i] = 1
-        return mtrx
+        if n < 1: raise ValueError("n must be >= 1.")
+        return cls(np.eye(n, dtype=np.float64), copy=False)
 
     @classmethod
     def random(cls, r: int, c: int, lo: float=0.0, hi: float=1.0) -> Matrix:
-        if not (isinstance(r, int) and isinstance(c, int)):
-            raise TypeError("Matrix dimensions must be specified as integers.")
-        if r < 1 or c < 1:
-            raise ValueError("Matrix must have 1 or more rows and columns.")
-        if not (isinstance(lo, (float, int)) and isinstance(hi, (float, int))):
-            raise TypeError("Max(hi) and min(lo) must be specified as floats.")
-        if lo >= hi:
-            raise ValueError("Min(lo) must be less than max(hi).")
-        random.seed()
-        return cls([Vector([random.uniform(lo, hi) for _ in range(0, c)]) for _ in range(0, r)])
+        if not (hi > lo): raise ValueError("hi must be > lo")
+        rng = np.random.default_rng()
+        return cls(rng.uniform(lo, hi, size=(r, c)).astype(float), copy=False)
 
     def __eq__(self, other: Matrix) -> bool:
         if not isinstance(other, Matrix):
-            raise TypeError("Matrices can only be compared to other matrices.")
+            return False
         if self.shape != other.shape:
             return False
-        for i in range(0, self.shape[0]):
-            for j in range(0, self.shape[1]):
-                if not math.isclose(self[i][j], other[i][j], abs_tol=EPS):
-                    return False
-        return True
+        return bool(np.allclose(self._a, other._a, rtol=0.0, atol=EPS))
 
     def sum(self) -> float:
-        return math.fsum(val for row in self
-                         for val in row)
+        return float(np.sum(self._a))
 
     def row_sum(self, i: int) -> float:
-        return math.fsum(val for val in self[i])
+        return float(np.sum(self._a[i, :]))
 
     def col_sum(self, j: int) -> float:
-        return math.fsum(row[j] for row in self.rows)
+        return float(np.sum(self._a[:, j]))
 
     def trace(self) -> float:
-        if len(self) != len(self.rows[0]):
-            raise ValueError("Trace can only be conducted on square matrices.")
-        return math.fsum(self[i][i] for i in range(0, len(self)))
+        if self.nrows != self.ncols:
+            raise ValueError("Trace requires square Matrix.")
+        return float(np.trace(self._a))
 
     def frobenius(self) -> float:
-        return math.sqrt(math.fsum((val ** 2) for row in self
-                                   for val in row))
+        return float(np.linalg.norm(self._a, ord="fro"))
 
     @property
     def nrows(self) -> int:
-        return len(self)
+        return int(self._a.shape[0])
 
     @property
     def ncols(self) -> int:
-        return len(self[0])
+        return int(self._a.shape[1])
 
     def row(self, i: int) -> Vector:
         if not isinstance(i, int):
@@ -168,173 +127,135 @@ class Matrix:
     def col(self, j: int) -> Vector:
         if not isinstance(j, int):
             raise TypeError("Column must be specified by an integer")
-        return Vector([row[j] for row in self])
+        return Vector(self._a[:, j])
 
     def set_row(self, i: int, v: Vector[float] | list[float]) -> None:
-        if not isinstance(i, int):
-            raise TypeError("Row must be specified by an integer")
-        if not isinstance(v, (Vector, list)):
-            raise TypeError("Rows must be a list or Vector of floats")
-        if len(v) != self.ncols:
-            raise ValueError("Incorrect row length")
-        if isinstance(v, list):
-            v = Vector(v)
-        self[i] = v
+        self._a[i, :] = v.values if isinstance(v, Vector) else v
 
     def set_col(self, j: int, v: Vector[float] | list[float]) -> None:
-        if not isinstance(j, int):
-            raise TypeError("Column must be specified by an integer.")
-        if not isinstance(v, (Vector, list)):
-            raise TypeError("Columns must be Vector or list.")
-        if not isinstance(v[0], (int, float)):
-            raise TypeError("Column values must be floats.")
-        if len(v) != self.nrows:
-            raise ValueError("Incorrect column length.")
-        for i, val in enumerate(v): #type: tuple[int, float]
-            self[i][j] = val
+        self._a[:, j] = v.values if isinstance(v, Vector) else v
 
     def transpose(self) -> Matrix:
-        return Matrix.from_cols(self.rows)
+        return self.T
 
     @property
     def T(self) -> Matrix:
-        return self.transpose()
+        return Matrix(self._a.T, copy=False)
 
     def apply(self, fn: Callable[[float], float]) -> Matrix:
-        if not callable(fn):
-            raise TypeError("Argument must be a callable function.")
-        return Matrix([[fn(val) for val in row]
-                       for row in self])
+        vfn = np.vectorize(fn, otypes=[float])
+        return Matrix(vfn(self._a), copy=False)
+
+    def _wrap_bin(self, other, op):
+        b = other._a if isinstance(other, Matrix) else other
+        return Matrix(op(self._a, b), copy=False)
 
     def __add__(self, other: Matrix | float | int) -> Matrix:
-        if isinstance(other, Matrix):
-            if self.shape != other.shape:
-                raise ValueError("Matrices must have the same dimensions for element-wise addition.")
-            return Matrix([
-                Vector([a + b for a,b in zip(row_a, row_b)])
-                for row_a,row_b in zip(self, other)])
-        elif isinstance(other, (float, int)):
-            return Matrix([Vector([(val + float(other)) for val in row])
-                           for row in self])
-        raise TypeError("Addition supported only between Matrix and scalar.")
+        return self._wrap_bin(other, np.add)
 
     def __iadd__(self, other: Matrix | float | int) -> Matrix:
-        if isinstance(other, Matrix):
-            if self.shape != other.shape:
-                raise ValueError("Matrices must have the same dimensions for in-place element-wise addition.")
-            for row_a, row_b in zip(self, other):
-                row_a[:] = [a + b for a,b in zip(row_a, row_b)]
-            return self
-        elif isinstance(other, (float, int)):
-            for row in self:
-                row[:] = [val + float(other) for val in row]
-            return self
-        raise TypeError("In place addition supported only between Matrix and scalars.")
+        np.add(self._a, other._a if isinstance(other, Matrix) else other, out=self._a)
+        return self
 
     def __sub__(self, other: Matrix | float | int) -> Matrix:
-        if isinstance(other, Matrix):
-            if self.shape != other.shape:
-                raise ValueError("Matrices must have the same dimensions for element-wise subtraction")
-            return Matrix([
-                Vector([a - b for a,b in zip(row_a, row_b)])
-                for row_a, row_b in zip(self,other)])
-        elif isinstance(other, (float, int)):
-            return Matrix([
-                Vector([val - float(other) for val in row])
-                for row in self])
-        raise TypeError("Subtraction only supported between Matrices and scalars.")
+        return self._wrap_bin(other, np.subtract)
 
     def __isub__(self, other: Matrix | float | int) -> Matrix:
-        if isinstance(other, Matrix):
-            if self.shape != other.shape:
-                raise ValueError("Matrices must have same dimensions for in place subtraction.")
-            for row_a,row_b in zip(self, other):
-                row_a[:] = [a-b for a,b in zip(row_a, row_b)]
-            return self
-        elif isinstance(other, (float, int)):
-            for row in self:
-                row[:] = [val - float(other) for val in row]
-            return self
-        raise TypeError("In-place subtraction supported only between Matrices and scalars.")
+        np.subtract(self._a, other._a if isinstance(other, Matrix) else other, out=self._a)
+        return self
 
     def __mul__(self, other: Matrix | float | int) -> Matrix:
-        if isinstance(other, Matrix):
-            if self.shape != other.shape:
-                raise ValueError("Matrices must have same dimensions for element-wise multiplication.")
-            return Matrix([
-                [a * b for a,b in zip(row_a, row_b)]
-                for row_a,row_b in zip(self, other)])
-        if isinstance(other, (float, int)):
-            return Matrix([
-                Vector([val * other for val in row])
-                for row in self])
-        raise TypeError("Multiplication only supported between matrices and scalars.")
+        return self._wrap_bin(other, np.multiply)
 
     def __rmul__(self, other: float | int) -> Matrix:
-        if isinstance(other, (float, int)):
-            return self * other
-        raise TypeError("Multiplication supported only between matrices and scalars.")
+        return Matrix(self._a * other)
 
-    def __truediv__(self, other: float | int) -> Matrix:
-        if isinstance(other, (float, int)):
-            return Matrix([
-                Vector([val / other for val in row])
-                for row in self])
-        raise TypeError("True division only supported between matrix and scalar.")
+    def __imul__(self, other: float | int | Matrix) -> Matrix:
+        np.multiply(self._a, other._a if isinstance(other, Matrix) else other, out=self._a)
+        return self
 
-    def __itruediv__(self, other: float | int) -> Matrix:
-        if isinstance(other, (float, int)):
-            for row in self:
-                row[:] = [val / other for val in row]
-            return self
-        raise TypeError("In place division only supported between matrix and scalar.")
+    def __truediv__(self, other: float | int | Matrix) -> Matrix:
+        return self._wrap_bin(other, np.divide)
+
+    def __itruediv__(self, other: float | int | Matrix) -> Matrix:
+        np.divide(self._a, other._a if isinstance(other, Matrix) else other, out=self._a)
+        return self
 
     def __matmul__(self, other: Matrix | Vector) -> Matrix | Vector:
         if isinstance(other, Matrix):
-            if self.ncols != other.nrows:
-                raise ValueError("Invalid shapes for Matrix multiplication.")
-            result = []
-            for i in range(0, self.nrows):
-                row = []
-                for j in range(0, other.ncols):
-                    s = 0.0
-                    for k in range(self.ncols):
-                        s += self[i][k] * other[k][j]
-                    row.append(s)
-                result.append(Vector(row))
-            return Matrix(result)
-        elif isinstance(other, Vector):
-            if self.ncols != len(other):
-                raise ValueError("Matrix Columns must match Vector Length.")
-            result = []
-            for i in range(0, self.nrows):
-                s = 0.0
-                for j in range(0, self.ncols):
-                    s += self[i][j] * other[j]
-                result.append(s)
-            return Vector(result)
+            return Matrix(self._a @ other._a, copy=False)
+        if isinstance(other, Vector):
+            return Vector(self._a @ other.values)
         return NotImplemented
 
     def matvec(self, v: Vector) -> Vector:
-        return self @ v
+        return Vector(self._a @ v.values)
 
     def vecmat(self, v: Vector) -> Vector:
-        return self.transpose @ v
+        return Vector(v.values @ self._a)
 
-    def to_numpy(self) -> np.ndarray:
+    def to_numpy(self, *, copy: bool=True) -> np.ndarray:
         """Return a NumPy ndarray copy of this Matrix."""
-        return np.array([[val for val in row] for row in self], dtype=float)
+        return self._a.copy() if copy else self._a
 
     @classmethod
-    def from_numpy(self, arr: np.ndarray) -> Matrix:
+    def from_numpy(cls, arr: np.ndarray, *, copy: bool=False) -> Matrix:
         """Create an array from a NumPy ndarray"""
         if arr.ndim != 2:
             raise ValueError("Input array must be a 2-dimensional array to convert to Matrix.")
-        return cls([Vector(row.tolist()) for row in arr])
+        return cls(arr, copy=copy)
 
     def __array__(self, dtype=None) -> np.ndarray:
         """Allow implicit conversion when passing Matrix to NumPy functions."""
-        return np.array([[val for val in row] for row in self], dtype=dtype)
+        return np.asarray(self._a, dtype=dtype)
+
+    def copy(self) -> Matrix:
+        return Matrix(self._a.copy(), copy=False)
+
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs: Any, **kwargs: Any) -> Any:
+        if method != "__call__":
+            return NotImplemented
+
+        processed_inputs = []
+        for x in inputs:
+            if isinstance(x, Matrix):
+                processed_inputs.append(x._a)
+            elif isinstance(x, Vector):
+                processed_inputs.append(x.values)
+            else:
+                processed_inputs.append(x)
+
+        out = kwargs.get('out', None)
+        if out:
+            processed_out = []
+            for o in out:
+                if isinstance(o, Matrix):
+                    processed_out.append(o._a)
+                elif isinstance(o, Vector):
+                    processed_out.append(o.values)
+                else:
+                    processed_out.append(o)
+            kwargs['out'] = tuple(processed_out)
+
+        results = ufunc(*processed_inputs, **kwargs)
+
+        if results is NotImplemented:
+            return NotImplemented
+
+        if ufunc.nout == 1:
+            return self._wrap_result(results)
+        else:
+            return tuple(self._wrap_result(res) for res in results)
+
+    @staticmethod
+    def _wrap_result(res: Any) -> Any:
+        """Helper for __array_ufunc__ to wrap results."""
+        if isinstance(res, np.ndarray):
+            if res.ndim == 2:
+                return Matrix(res, copy=False)
+            elif res.ndim == 1:
+                return Vector(res, copy=False)
+        return res
 
 
 
